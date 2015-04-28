@@ -1180,6 +1180,37 @@ func (m *DbMap) trace(started time.Time, query string, args ...interface{}) {
 	}
 }
 
+func getInterfaceString(v interface{}) string {
+	s := ""
+	switch v.(type) {
+	case string:
+		s = fmt.Sprintf("%q", v)
+	default:
+		if v != nil {
+			rv := reflect.ValueOf(v)
+			if rv.Kind() == reflect.Ptr {
+				v1 := reflect.Indirect(rv)
+				if v1.IsValid() {
+					v2 := v1.Interface()
+					switch v2.(type) {
+					case string:
+						s = fmt.Sprintf("%q", v2)
+					default:
+						s = fmt.Sprintf("%v", v2)
+					}
+				} else {
+					s = fmt.Sprintf("%v", v)
+				}
+			} else {
+				s = fmt.Sprintf("%v", v)
+			}
+		} else {
+			s = fmt.Sprintf("%v", v)
+		}
+	}
+	return s
+}
+
 func argsString(args ...interface{}) string {
 	var margs string
 	for i, a := range args {
@@ -1190,12 +1221,7 @@ func argsString(args ...interface{}) string {
 				v = y
 			}
 		}
-		switch v.(type) {
-		case string:
-			v = fmt.Sprintf("%q", v)
-		default:
-			v = fmt.Sprintf("%v", v)
-		}
+		v = getInterfaceString(v)
 		margs += fmt.Sprintf("%d:%s", i+1, v)
 		if i+1 < len(args) {
 			margs += " "
